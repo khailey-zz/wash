@@ -1,0 +1,686 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Highcharts Example</title>
+    
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="js/highcharts.js"></script>
+    <script type="text/javascript" src="js/themes/gray.js"></script>
+
+   <style type="text/css">
+      table { border-collapse:collapse; }
+   </style>
+
+<!--
+    <script type="text/javascript" src="http://www.highcharts.com/samples/data/usdeur.js"></script>
+    <script type="text/javascript" src="js/highcharts.js"></script>
+
+    <script type="text/javascript" src="js/highstock.fix.js"></script>
+  -- bar charts shifted up
+    <script type="text/javascript" src="js/highstock.js"></script>
+  --  no highstock
+    <script type="text/javascript" src="js/highstock.src.js"></script>
+  -- bar charts shifted up
+    <script type="text/javascript" src="js/highstock.src.js.10"></script>
+  -- bar charts are column 
+  --   as of Oct 24, 2011
+    <script type="text/javascript" src="https://raw.github.com/highslide-software/highcharts.com/stock2/js/highstock.src.js"></script>
+
+    <script type="text/javascript" src="http://www.highcharts.com/js/testing-stock-exporting.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+
+    <body bgcolor="#505050">
+    write/commit , color: '#FF792A'
+           read  , color: '#3A2FAF' 
+           SAN   , color: 'rgba(123, 178, 191, 0.6)'
+        Delphix  , color: '#E1E583' 
+    <td> <div id="wsz" style="width: 420px; height: 100px"> </div> </td>
+-->
+
+   <body bgcolor="#202020">
+   
+   <table border="0" cellpadding="-1" >
+   <tr> 
+   <td> <div id="vdbaas" style="width: 800px; height: 300px"> </div> </td>
+   </tr>
+   </table>
+
+    <table border="0" cellpadding="-1">
+      <tr>
+         <td> <div id="topsql" style="width: 265px; height: 250px"> topsql</div> </td>
+         <td> <div id="topevt" style="width: 265px; height: 250px"> topevt</div> </td>
+         <td> <div id="topses" style="width: 265px; height: 250px"> topses</div> </td>
+      </tr>
+   </table>
+   <div id="debug"     style="width: 800px; height: 100px"> hello<br> </div>
+   <div id="container" style="width: 800px; height: 300px"> stocks</div> 
+
+</body>
+
+<script type="text/javascript">
+
+  Array.max = function( array ){
+  return Math.max.apply( Math, array );
+  };
+
+   
+$(document).ready(function() {
+
+    //var pathname = window.location.pathname;
+    //var pathname = window.location;
+    var loc = window.location.href;
+    var color_oth="#F06EAA"; // pink
+    var color_que="#C2B79B"; // lightest-brown
+    var color_net="#9F9371"; // light-brown 
+    var color_adm="#717354"; // med-brown
+    var color_cnf="#5C440B"; // dark-brown
+    var color_com="#E46800"; // orange
+    var color_app="#C02800"; // red
+    var color_cnc="#8B1A00"; // brick
+    var color_sio="#0094E7"; // light-blue
+    var color_uio="#004AE7"; // dark-blue
+    var color_sch="#CCFFCC"; // light-green
+    var color_cpu="#00CC00"; // green
+
+    var vdb = "x";
+    var counter = 1;
+    var get_details = 0;
+    var loadpoints = 60 ;
+    var $debug = $('#debug');
+
+    var sesnames = 0 ;
+
+
+    // lastIndexOf not defined
+    // vdb = loc.pathname.substring(0, loc.pathname.lastIndexOf('=') + 1);
+    // get input variables
+    var partsArray = loc.split('=');
+    vdb =partsArray[1];
+
+    $("#debug").append(loc);
+    $("#debug").append(" ");
+    $("#debug").append(vdb);
+
+   var optionsvdbaas = {
+      chart: { renderTo: 'vdbaas', 
+               defaultSeriesType: 'area' , 
+               borderRadius: 0 ,  
+               events: { load: loadData ,
+                      selection: function(event) {
+                           if (event.xAxis) {
+                               beg_epoch=event.xAxis[0].min;
+                               end_epoch=event.xAxis[0].max;
+                              //getDetails ;
+                               setTimeout(getDetails, 1);
+                               //$debug.html('min='+ beg_epoch); 
+                               //$debug.html('max='+ end_epoch);
+                               //$debug.html('min: '+ event.xAxis[0].min +', max: '+ event.xAxis[0].max);
+                               $debug.html(' '); 
+                               $("#debug").append('min='+ beg_epoch); 
+                               $("#debug").append('max='+ end_epoch);
+                           } else {
+                               beg_epoch=0;
+                               end_epoch=0;
+                               $debug.html ('Selection reset');
+                               setTimeout(getDetails, 1);
+                           }
+                       }
+               },
+               zoomType: 'x' , 
+               plotShadow: false  },
+      title: { text: 'VDBs : AAS ' },
+      //xAxis: { type: 'datetime', tickPixelInterval: 60 , labels: {enabled:true}},
+      xAxis: { type: 'datetime', labels: {enabled:true}},
+      yAxis: { tickPixelInterval: 15 , min:0, title: { text: 'Avg Act Sessions' },
+                  plotLines: [{ width: 1, color: '#808080' }] },
+    tooltip: {  
+      formatter: function () {  
+        //return Highcharts.dateFormat("%B %e %Y", this.x) ;  
+        return Highcharts.dateFormat("%H:%M ",this.x) + " " + this.y ;  
+      }  
+    },   
+      legend: {
+                align: 'right',
+                verticalAlign: 'top',
+                layout: 'vertical' ,
+                borderRadius: 0 ,
+                itemWidth: 60 ,
+                itemStyle: {
+                                color: '#D0D0D0',
+                                fontWeight: 'normal',
+                                fontSize: '10px'
+                              }
+      },
+      plotOptions: {
+//http://jsfiddle.net/7Mmee/19/
+         series: {
+             stacking: 'normal' 
+        },
+         column: {
+              lineWidth: 0,
+              shadow: false,
+              pointWidth: 12,
+              borderWidth:0 ,
+              stacking: 'normal' ,
+              marker: {radius: 0 }
+          }
+      },
+      series: [
+              { name: 'other',data: [], color: color_oth, marker: { radius: 0} }
+            , { name: 'que',data: [], color: color_que , marker: { radius: 0}}
+            , { name: 'network',data: [], color: color_net , marker: { radius: 0}}
+            , { name: 'admin',data: [], color: color_adm , marker: { radius: 0}}
+            , { name: 'config',data: [], color: color_cnf , marker: { radius: 0}}
+            , { name: 'commit',data: [], color: color_com , marker: { radius: 0}}
+            , { name: 'application',data: [], color: color_app , marker: { radius: 0}}
+            , { name: 'concurency',data: [], color: color_cnc , marker: { radius: 0}}
+            , { name: 'system I/O',data: [], color: color_sio , marker: { radius: 0}}
+            , { name: 'user I/O',data: [], color: color_uio , marker: { radius: 0}}
+            , { name: 'scheduler',data: [], color: color_sch , marker: { radius: 0}}
+            , { name: 'cpu',data: [], color: color_cpu , marker: { radius: 0}}
+        ]
+   }
+
+   var optionstopses = {
+      chart: { renderTo: 'topses', defaultSeriesType: 'bar' , zoomType: 'y' , borderRadius: 0 
+              ,style: { fontFamily: '"Arial Narrow"', fontSize: '10px' }
+             },
+      title: { text: 'Top Session ' },
+      xAxis: { categories: ['vdb1', 'vdb2', 'vdb3']
+                 //,labels: {
+                 // formatter: function() {
+                 // return '<a href="vdb.html?q='+ this.value +'">'+ this.value +'</a>';
+                // }
+                //}
+                 ,labels: { style: { fontFamily: '"Arial Narrow"', fontSize: '10px' } }
+             },
+      yAxis: { min: 0, max: 100 , title: { text: '', align: 'high' }  },
+      plotOptions: { bar: { borderWidth:0 ,stacking: 'normal', dataLabels: { enabled: false } } },
+      legend: { enabled: false },
+      series: [
+              { name: 'other',data: [], color: color_oth }       // 0
+            , { name: 'que',data: [], color: color_que }         // 1
+            , { name: 'network',data: [], color: color_net }     // 2
+            , { name: 'admin',data: [], color: color_adm }       // 3
+            , { name: 'config',data: [], color: color_cnf }      // 4
+            , { name: 'commit',data: [], color: color_com }      // 5
+            , { name: 'application',data: [], color: color_app } // 6
+            , { name: 'concurency',data: [], color: color_cnc }  // 7
+            , { name: 'system I/O',data: [], color: color_sio }  // 8
+            , { name: 'user I/O',data: [], color: color_uio }    // 9
+            , { name: 'scheduler',data: [], color: color_sch }   // 10
+            , { name: 'cpu',data: [], color: color_cpu }         // 11
+        ]
+   }
+   var optionstopevt = {
+      chart: { renderTo: 'topevt', defaultSeriesType: 'bar' , zoomType: 'y' , borderRadius: 0 ,
+                style: { fontFamily: '"Arial Narrow"', fontSize: '10px' }
+             },
+      title: { text: 'Top Event ' },
+      xAxis: { categories: ['vdb1', 'vdb2', 'vdb3']
+                 ,labels: {
+                   formatter: function() {
+                   return '<a href="vdb.html?q='+ this.value +'">'+ this.value +'</a>';
+                },
+                style: { fontFamily: '"Arial Narrow"', fontSize: '10px' }
+              }
+             },
+      yAxis: { min: 0, max: 100, title: { text: '', align: 'high' }  },
+      plotOptions: { bar: { borderWidth:0 ,stacking: 'normal', dataLabels: { enabled: false } } },
+      legend: { enabled: false },
+      series: [
+              { name: 'other',data: [], color: color_oth }       // 0
+            , { name: 'que',data: [], color: color_que }         // 1
+            , { name: 'network',data: [], color: color_net }     // 2
+            , { name: 'admin',data: [], color: color_adm }       // 3
+            , { name: 'config',data: [], color: color_cnf }      // 4
+            , { name: 'commit',data: [], color: color_com }      // 5
+            , { name: 'application',data: [], color: color_app } // 6
+            , { name: 'concurency',data: [], color: color_cnc }  // 7
+            , { name: 'system I/O',data: [], color: color_sio }  // 8
+            , { name: 'user I/O',data: [], color: color_uio }    // 9
+            , { name: 'scheduler',data: [], color: color_sch }   // 10
+            , { name: 'cpu',data: [], color: color_cpu }         // 11
+        ]
+   }
+   var optionstopsql = {
+      chart: { renderTo: 'topsql', defaultSeriesType: 'bar' , zoomType: 'y' , borderRadius: 0 
+               //,marginTop: 50
+               //,spacingTop: 50
+             },
+      title: { text: 'Top SQL ' },
+      xAxis: { categories: ['vdb1', 'vdb2', 'vdb3']
+                 ,labels: {
+                   formatter: function() {
+                   return '<a href="vdb.html?q='+ this.value +'">'+ this.value +'</a>';
+                }
+                ,style: { fontFamily: '"Arial Narrow"', fontSize: '10px' }
+              }
+              ,maxPadding:100
+              ,reversed: true
+             },
+      yAxis: { min: 0, max: 100 ,title: { text: '', align: 'high' }  
+              ,maxPadding:100
+             },
+      plotOptions: { bar: { borderWidth:0 ,stacking: 'normal', dataLabels: { enabled: false } } },
+      legend: { enabled: false },
+      series: [
+              { name: 'other',data: [], color: color_oth }       // 0
+            , { name: 'que',data: [], color: color_que }         // 1
+            , { name: 'network',data: [], color: color_net }     // 2
+            , { name: 'admin',data: [], color: color_adm }       // 3
+            , { name: 'config',data: [], color: color_cnf }      // 4
+            , { name: 'commit',data: [], color: color_com }      // 5
+            , { name: 'application',data: [], color: color_app } // 6
+            , { name: 'concurency',data: [], color: color_cnc }  // 7
+            , { name: 'system I/O',data: [], color: color_sio }  // 8
+            , { name: 'user I/O',data: [], color: color_uio }    // 9
+            , { name: 'scheduler',data: [], color: color_sch }   // 10
+            , { name: 'cpu',data: [], color: color_cpu }         // 11
+        ]
+   }
+
+/*
+ window.chart = new Highcharts.StockChart({
+        chart: { renderTo: 'container' },
+        rangeSelector: { selected: 1 },
+        title: { text: 'USD to EUR exchange rate' },
+        xAxis: { maxZoom: 14 * 24 * 3600000 // fourteen days
+        },
+        yAxis: { title: { text: 'Exchange rate' } },
+        series: [{ name: 'USD to EUR',
+                   data: usdeur }]
+    }
+  //    ,  function(chart){
+  //        setTimeout(function(){
+  //            $('input', $('#'+chart.options.chart.renderTo)).datepicker()
+  //        },0)
+  //    }
+    );
+*/
+
+/*
+
+    $.getJSON('http://www.highcharts.com/samples/data/jsonp.php?filename=aapl-c.json&callback=?', 
+        function(data) {
+            window.chart = new Highcharts.StockChart({
+                chart : { renderTo : 'container',  defaultSeriesType: 'area'  }, 
+                plotOptions: { area: { stacking: 'normal' } },
+                rangeSelector : { selected : 1 },
+                title : { text : 'Database Load' },
+                xAxis : { maxZoom : 14 * 24 * 3600000 // fourteen days 
+                        },
+           //   series : [{ name : 'AAPL', data : data, tooltip: { yDecimals: 4 } }]
+                series : [{ name : 'AAPL', data : data },
+                          { name : 'GOOG', data : data }]
+            });
+        });
+*/
+
+   chartvdbaas = new Highcharts.Chart(optionsvdbaas);
+
+   charttopsql = new Highcharts.Chart(optionstopsql);
+   charttopevt = new Highcharts.Chart(optionstopevt);
+   charttopses = new Highcharts.Chart(optionstopses);
+
+   // chartvdbaas.series[5].hide();
+
+ function loadData() {
+   $.ajax({
+      url: '/cgi-bin/json_ash.sh?points='+loadpoints+'&vdb='+vdb+'&type='+sesnames,
+      dataType: 'json',
+      success: function(data) {
+           $.each(data,function(key,val) {
+
+             if ( key == "Other" )           oth=val;  // 0
+             if ( key == "Queueing" )        que=val;  // 1
+             if ( key == "Network" )         net=val;  // 2
+             if ( key == "Administrative" )  adm=val;  // 3
+             if ( key == "Configuration" )   cnf=val;  // 4
+             if ( key == "Commit" )          com=val;  // 5
+             if ( key == "Application" )     app=val;  // 6
+             if ( key == "Concurrency" )     cnc=val;  // 7
+             if ( key == "System_I/O" )      sio=val;  // 8
+             if ( key == "User_I/O" )        uio=val;  // 9
+             if ( key == "Scheduler" )       sch=val;  // 10
+             if ( key == "CPU" )             cpu=val;  // 11 
+           //if ( key == "Cluster" )         clu=val;
+
+             if ( key == "sqlnames" )       sqlnames=val;
+             if ( key == "sql_oth" )         sql_oth=val;  // 0
+             if ( key == "sql_que" )         sql_que=val;  // 1
+             if ( key == "sql_net" )         sql_net=val;  // 2
+             if ( key == "sql_adm" )         sql_adm=val;  // 3
+             if ( key == "sql_cnf" )         sql_cnf=val;  // 4
+             if ( key == "sql_com" )         sql_com=val;  // 5
+             if ( key == "sql_app" )         sql_app=val;  // 6
+             if ( key == "sql_cnc" )         sql_cnc=val;  // 7
+             if ( key == "sql_sio" )         sql_sio=val;  // 8
+             if ( key == "sql_uio" )         sql_uio=val;  // 9
+             if ( key == "sql_sch" )         sql_sch=val;  // 10
+             if ( key == "sql_cpu" )         sql_cpu=val;  // 11 
+           
+             if ( key == "sesnames" )        sesnames=val;
+             if ( key == "ses_oth" )         ses_oth=val;  // 0
+             if ( key == "ses_que" )         ses_que=val;  // 1
+             if ( key == "ses_net" )         ses_net=val;  // 2
+             if ( key == "ses_adm" )         ses_adm=val;  // 3
+             if ( key == "ses_cnf" )         ses_cnf=val;  // 4
+             if ( key == "ses_com" )         ses_com=val;  // 5
+             if ( key == "ses_app" )         ses_app=val;  // 6
+             if ( key == "ses_cnc" )         ses_cnc=val;  // 7
+             if ( key == "ses_sio" )         ses_sio=val;  // 8
+             if ( key == "ses_uio" )         ses_uio=val;  // 9
+             if ( key == "ses_sch" )         ses_sch=val;  // 10
+             if ( key == "ses_cpu" )         ses_cpu=val;  // 11 
+           
+             if ( key == "evtnames" )       evtnames=val;
+             if ( key == "evt_oth" )         evt_oth=val;  // 0
+             if ( key == "evt_que" )         evt_que=val;  // 1
+             if ( key == "evt_net" )         evt_net=val;  // 2
+             if ( key == "evt_adm" )         evt_adm=val;  // 3
+             if ( key == "evt_cnf" )         evt_cnf=val;  // 4
+             if ( key == "evt_com" )         evt_com=val;  // 5
+             if ( key == "evt_app" )         evt_app=val;  // 6
+             if ( key == "evt_cnc" )         evt_cnc=val;  // 7
+             if ( key == "evt_sio" )         evt_sio=val;  // 8
+             if ( key == "evt_uio" )         evt_uio=val;  // 9
+             if ( key == "evt_sch" )         evt_sch=val;  // 10
+             if ( key == "evt_cpu" )         evt_cpu=val;  // 11 
+            
+           });
+
+           $("#debug").empty();
+        $("#debug").append('/cgi-bin/json_ash.sh?points='+loadpoints+'&vdb='+vdb+'&type='+sesnames);
+
+        //mx =  Array.max(  [ mx  , 1 ] );
+        //chartvdbaas.yAxis[0].setExtremes(0, mx);
+        //$("#debug").append(eval(oscpu));
+        //$("#debug").append(" x ");
+        // two ways to output the arrays from perl cgi
+
+        //var sesn = sesnames.join(',');
+        //$("#debug").append(sesn);
+        //var evtn = evtnames.join(',');
+        //$("#debug").append(evtn);
+
+        //var blkstr = [];
+        //$.each(cpu, function(val1,val2) {                    
+        //     var str = val1 + ":" + val2;
+        //     blkstr.push(str);
+        //     blkstr.push(val2);
+        //});
+        //$("#debug").append(blkstr.join(","));
+
+        //mx =  Array.max(  [ mx  , 1 ] );
+        //chartvdbaas.yAxis[0].setExtremes(0, mx);
+
+         chartvdbaas.series[0].setData(oth, false, true); 
+         chartvdbaas.series[1].setData(que, false, true); 
+         chartvdbaas.series[2].setData(net, false, true); 
+         chartvdbaas.series[3].setData(adm, false, true); 
+         chartvdbaas.series[4].setData(cnf, false, true);
+         chartvdbaas.series[5].setData(com, false, true);
+         chartvdbaas.series[6].setData(cnc, false, true);
+         chartvdbaas.series[7].setData(app, false, true);
+         chartvdbaas.series[8].setData(sio, false, true);
+         chartvdbaas.series[9].setData(uio, false, true);
+         chartvdbaas.series[10].setData(sch, false, true);
+         chartvdbaas.series[11].setData(cpu, false, true);
+
+      if ( sesnames != 0 && sesnames != 1 && get_details == 0) {
+         charttopses.xAxis[0].setCategories(sesnames, false);
+         charttopses.series[0].setData(ses_oth, false, true); 
+         charttopses.series[1].setData(ses_que, false, true); 
+         charttopses.series[2].setData(ses_net, false, true); 
+         charttopses.series[3].setData(ses_adm, false, true); 
+         charttopses.series[4].setData(ses_cnf, false, true);
+         charttopses.series[5].setData(ses_com, false, true);
+         charttopses.series[6].setData(ses_cnc, false, true);
+         charttopses.series[7].setData(ses_app, false, true);
+         charttopses.series[8].setData(ses_sio, false, true);
+         charttopses.series[9].setData(ses_uio, false, true);
+         charttopses.series[10].setData(ses_sch, false, true);
+         charttopses.series[11].setData(ses_cpu, false, true);
+
+         charttopevt.xAxis[0].setCategories(evtnames, false);
+         charttopevt.series[0].setData(evt_oth, false, true); 
+         charttopevt.series[1].setData(evt_que, false, true); 
+         charttopsql.series[2].setData(evt_net, false, true); 
+         charttopevt.series[3].setData(evt_adm, false, true); 
+         charttopevt.series[4].setData(evt_cnf, false, true);
+         charttopevt.series[5].setData(evt_com, false, true);
+         charttopevt.series[6].setData(evt_cnc, false, true);
+         charttopevt.series[7].setData(evt_app, false, true);
+         charttopevt.series[8].setData(evt_sio, false, true);
+         charttopevt.series[9].setData(evt_uio, false, true);
+         charttopevt.series[10].setData(evt_sch, false, true);
+         charttopevt.series[11].setData(evt_cpu, false, true);
+
+         charttopsql.xAxis[0].setCategories(sqlnames, false);
+         charttopsql.series[0].setData(sql_oth, false, true); 
+         charttopsql.series[1].setData(sql_que, false, true); 
+         charttopsql.series[2].setData(sql_net, false, true); 
+         charttopsql.series[3].setData(sql_adm, false, true); 
+         charttopsql.series[4].setData(sql_cnf, false, true);
+         charttopsql.series[5].setData(sql_com, false, true);
+         charttopsql.series[6].setData(sql_cnc, false, true);
+         charttopsql.series[7].setData(sql_app, false, true);
+         charttopsql.series[8].setData(sql_sio, false, true);
+         charttopsql.series[9].setData(sql_uio, false, true);
+         charttopsql.series[10].setData(sql_sch, false, true);
+         charttopsql.series[11].setData(sql_cpu, false, true);
+
+         charttopsql.redraw(false);
+         charttopevt.redraw(false);
+         charttopses.redraw(false);
+         
+         sesnames=1;
+     }
+
+         sesnames = 0;
+         counter=counter+1;
+         $("#debug").append("  " + counter);
+         chartvdbaas.redraw(false);
+
+         setTimeout(loadData, 5000);
+
+
+      },
+      error:    function(data) { 
+                             $("#debug").append(" errorstart ");
+                             $("#debug").append(data);
+                             $("#debug").append(" errorend ");
+        $("#debug").append('/cgi-bin/json_ash.sh?points='+loadpoints+'&vdb='+vdb+'&type='+sessnames);
+                          },
+      complete: function() { 
+                             $("#debug").append(" complete ");
+                          },
+      cache: false
+   }
+   );
+      $("#debug").append(" z ");
+ }
+
+
+ function getDetails() {
+   $.ajax({
+     //  url: '/cgi-bin/json_ash.sh?points=60&vdb='+vdb,
+     //                          get_details=1&beg_epoch=999&end_epoch=999&vdb=9999:XXXX 
+     // url: '/cgi-bin/json_ash.sh?points='+loadpoints+'&vdb='+vdb,
+      url: '/cgi-bin/json_ash.sh?&get_details=1&beg_epoch='+beg_epoch+'&end_epoch='+end_epoch+'&vdb='+vdb+'&points='+loadpoints+'&type='+0,
+      dataType: 'json',
+      success: function(data) {
+           $.each(data,function(key,val) {
+
+             if ( key == "Other" )           oth=val;  // 0
+             if ( key == "Queueing" )        que=val;  // 1
+             if ( key == "Network" )         net=val;  // 2
+             if ( key == "Administrative" )  adm=val;  // 3
+             if ( key == "Configuration" )   cnf=val;  // 4
+             if ( key == "Commit" )          com=val;  // 5
+             if ( key == "Application" )     app=val;  // 6
+             if ( key == "Concurrency" )     cnc=val;  // 7
+             if ( key == "System_I/O" )      sio=val;  // 8
+             if ( key == "User_I/O" )        uio=val;  // 9
+             if ( key == "Scheduler" )       sch=val;  // 10
+             if ( key == "CPU" )             cpu=val;  // 11 
+           //if ( key == "Cluster" )         clu=val;
+
+             if ( key == "sqlnames" )       sqlnames=val;
+             if ( key == "sql_oth" )         sql_oth=val;  // 0
+             if ( key == "sql_que" )         sql_que=val;  // 1
+             if ( key == "sql_net" )         sql_net=val;  // 2
+             if ( key == "sql_adm" )         sql_adm=val;  // 3
+             if ( key == "sql_cnf" )         sql_cnf=val;  // 4
+             if ( key == "sql_com" )         sql_com=val;  // 5
+             if ( key == "sql_app" )         sql_app=val;  // 6
+             if ( key == "sql_cnc" )         sql_cnc=val;  // 7
+             if ( key == "sql_sio" )         sql_sio=val;  // 8
+             if ( key == "sql_uio" )         sql_uio=val;  // 9
+             if ( key == "sql_sch" )         sql_sch=val;  // 10
+             if ( key == "sql_cpu" )         sql_cpu=val;  // 11 
+           
+             if ( key == "sesnames" )        sesnames=val;
+             if ( key == "ses_oth" )         ses_oth=val;  // 0
+             if ( key == "ses_que" )         ses_que=val;  // 1
+             if ( key == "ses_net" )         ses_net=val;  // 2
+             if ( key == "ses_adm" )         ses_adm=val;  // 3
+             if ( key == "ses_cnf" )         ses_cnf=val;  // 4
+             if ( key == "ses_com" )         ses_com=val;  // 5
+             if ( key == "ses_app" )         ses_app=val;  // 6
+             if ( key == "ses_cnc" )         ses_cnc=val;  // 7
+             if ( key == "ses_sio" )         ses_sio=val;  // 8
+             if ( key == "ses_uio" )         ses_uio=val;  // 9
+             if ( key == "ses_sch" )         ses_sch=val;  // 10
+             if ( key == "ses_cpu" )         ses_cpu=val;  // 11 
+           
+             if ( key == "evtnames" )       evtnames=val;
+             if ( key == "evt_oth" )         evt_oth=val;  // 0
+             if ( key == "evt_que" )         evt_que=val;  // 1
+             if ( key == "evt_net" )         evt_net=val;  // 2
+             if ( key == "evt_adm" )         evt_adm=val;  // 3
+             if ( key == "evt_cnf" )         evt_cnf=val;  // 4
+             if ( key == "evt_com" )         evt_com=val;  // 5
+             if ( key == "evt_app" )         evt_app=val;  // 6
+             if ( key == "evt_cnc" )         evt_cnc=val;  // 7
+             if ( key == "evt_sio" )         evt_sio=val;  // 8
+             if ( key == "evt_uio" )         evt_uio=val;  // 9
+             if ( key == "evt_sch" )         evt_sch=val;  // 10
+             if ( key == "evt_cpu" )         evt_cpu=val;  // 11 
+           
+
+           });
+
+        get_details = 1;
+        $("#debug").append('/cgi-bin/json_ash.sh?&get_details=1&beg_epoch='+beg_epoch+'&end_epoch='+end_epoch+'&vdb='+vdb+'&points='+loadpoints+'&type='+0);
+        //$("#debug").append(" before_top_sql ");
+
+        //mx =  Array.max(  [ mx  , 1 ] );
+        //chartvdbaas.yAxis[0].setExtremes(0, mx);
+        //$("#debug").append(eval(oscpu));
+        //$("#debug").append(" x ");
+        // two ways to output the arrays from perl cgi
+        //var sesn = sesnames.join(',');
+        //$("#debug").append(sesn);
+        //var evtn = evtnames.join(',');
+        //$("#debug").append(evtn);
+
+        //var blkstr = [];
+        //$.each(cpu, function(val1,val2) {                    
+        //     var str = val1 + ":" + val2;
+        //     blkstr.push(str);
+        //     blkstr.push(val2);
+        //});
+        //$("#debug").append(blkstr.join(","));
+
+
+         charttopses.xAxis[0].setCategories(sesnames, false);
+         charttopses.series[0].setData(ses_oth, false, true); 
+         charttopses.series[1].setData(ses_que, false, true); 
+         charttopses.series[2].setData(ses_net, false, true); 
+         charttopses.series[3].setData(ses_adm, false, true); 
+         charttopses.series[4].setData(ses_cnf, false, true);
+         charttopses.series[5].setData(ses_com, false, true);
+         charttopses.series[6].setData(ses_cnc, false, true);
+         charttopses.series[7].setData(ses_app, false, true);
+         charttopses.series[8].setData(ses_sio, false, true);
+         charttopses.series[9].setData(ses_uio, false, true);
+         charttopses.series[10].setData(ses_sch, false, true);
+         charttopses.series[11].setData(ses_cpu, false, true);
+
+         charttopevt.xAxis[0].setCategories(evtnames, false);
+         charttopevt.series[0].setData(evt_oth, false, true); 
+         charttopevt.series[1].setData(evt_que, false, true); 
+         charttopsql.series[2].setData(evt_net, false, true); 
+         charttopevt.series[3].setData(evt_adm, false, true); 
+         charttopevt.series[4].setData(evt_cnf, false, true);
+         charttopevt.series[5].setData(evt_com, false, true);
+         charttopevt.series[6].setData(evt_cnc, false, true);
+         charttopevt.series[7].setData(evt_app, false, true);
+         charttopevt.series[8].setData(evt_sio, false, true);
+         charttopevt.series[9].setData(evt_uio, false, true);
+         charttopevt.series[10].setData(evt_sch, false, true);
+         charttopevt.series[11].setData(evt_cpu, false, true);
+
+         charttopsql.xAxis[0].setCategories(sqlnames, false);
+         charttopsql.series[0].setData(sql_oth, false, true); 
+         charttopsql.series[1].setData(sql_que, false, true); 
+         charttopsql.series[2].setData(sql_net, false, true); 
+         charttopsql.series[3].setData(sql_adm, false, true); 
+         charttopsql.series[4].setData(sql_cnf, false, true);
+         charttopsql.series[5].setData(sql_com, false, true);
+         charttopsql.series[6].setData(sql_cnc, false, true);
+         charttopsql.series[7].setData(sql_app, false, true);
+         charttopsql.series[8].setData(sql_sio, false, true);
+         charttopsql.series[9].setData(sql_uio, false, true);
+         charttopsql.series[10].setData(sql_sch, false, true);
+         charttopsql.series[11].setData(sql_cpu, false, true);
+
+         $("#debug").append(" after_top_sql ");
+
+         charttopsql.redraw(false);
+         charttopevt.redraw(false);
+         charttopses.redraw(false);
+
+      // setTimeout(requestData, 60000);
+
+      },
+      error:    function(data) { 
+                             $("#debug").append(" errorstart ");
+                             //$("#debug").append(data);
+        $("#debug").append('/cgi-bin/json_ash.sh?&get_details=1&beg_epoch='+beg_epoch+'&end_epoch='+end_epoch+'&vdb='+vdb+'&points='+loadpoints+'&type='+0);
+                             $("#debug").append(" errorend ");
+                          },
+      complete: function() { 
+                             $("#debug").append(" complete ");
+                          },
+      cache: false
+   }
+   );
+      $("#debug").append(" z ");
+ }
+
+ function requestData() {
+   $.ajax({
+      //url: 'http://172.16.100.163:81/cgi-bin/vdb.sh?points=1',
+      url: '/cgi-bin/json_vdb.sh?points=1&vdb='+vdb,
+      dataType: 'json',
+      success: function(data) {
+        $.each(data,function(key,val) {
+             if ( key == "CPU" ) oscpu=val;
+         });
+
+         // mx =  Array.max(  [ mx  , 1 ] );
+         // chartvdbaas.yAxis[0].setExtremes(0, mx);
+
+          chartvdbaas.redraw(false);
+          setTimeout(requestData, 60000);
+      },
+      cache: false
+   });
+ }
+
+});
+    </script>
