@@ -9,11 +9,11 @@ and enables HTTP access to the data
 in interactive charts. The web access requires
 that Apache be up and runnning.
 
-Installing
+Installing on LINUX Redhat
 -------------------
 
 
-	$ cd /usr/local/apache2
+	$ cd /var/www
 	$ # copy the tar.gz file from github here
 	$ gzip -d khailey-wash-155931c.tar.gz # name generated for github download
 	$ tar xvf khailey-wash-155931c.tar
@@ -22,7 +22,7 @@ Installing
 There are 3 basic files
 
 1. ./cash.sh  - collect ASH like data from Oracle into a flat file, it  runs in a continual loop
-2. ./htdocs/ash.html - basic web page using Highcharts
+2. ./html/ash.html - basic web page using Highcharts
 3. ./cgi-bin/json_ash.sh - cgi to read ASH like data and give it to the web page via JSON
 
 plus highchart javascript files in 

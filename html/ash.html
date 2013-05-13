@@ -153,7 +153,6 @@ $(document).ready(function() {
                               }
       },
       plotOptions: {
-//http://jsfiddle.net/7Mmee/19/
          series: {
              stacking: 'normal' 
         },
@@ -167,18 +166,18 @@ $(document).ready(function() {
           }
       },
       series: [
-              { name: 'other',data: [], color: color_oth, marker: { radius: 0} }
-            , { name: 'que',data: [], color: color_que , marker: { radius: 0}}
-            , { name: 'network',data: [], color: color_net , marker: { radius: 0}}
-            , { name: 'admin',data: [], color: color_adm , marker: { radius: 0}}
-            , { name: 'config',data: [], color: color_cnf , marker: { radius: 0}}
-            , { name: 'commit',data: [], color: color_com , marker: { radius: 0}}
-            , { name: 'application',data: [], color: color_app , marker: { radius: 0}}
-            , { name: 'concurency',data: [], color: color_cnc , marker: { radius: 0}}
-            , { name: 'system I/O',data: [], color: color_sio , marker: { radius: 0}}
-            , { name: 'user I/O',data: [], color: color_uio , marker: { radius: 0}}
-            , { name: 'scheduler',data: [], color: color_sch , marker: { radius: 0}}
-            , { name: 'cpu',data: [], color: color_cpu , marker: { radius: 0}}
+              { legendIndex: 1, name: 'other',data: [], color: color_oth, marker: { radius: 0} }
+            , { legendIndex: 2, name: 'que',data: [], color: color_que , marker: { radius: 0}}
+            , { legendIndex: 3, name: 'network',data: [], color: color_net , marker: { radius: 0}}
+            , { legendIndex: 4, name: 'admin',data: [], color: color_adm , marker: { radius: 0}}
+            , { legendIndex: 5, name: 'config',data: [], color: color_cnf , marker: { radius: 0}}
+            , { legendIndex: 6, name: 'commit',data: [], color: color_com , marker: { radius: 0}}
+            , { legendIndex: 7, name: 'application',data: [], color: color_app , marker: { radius: 0}}
+            , { legendIndex: 8, name: 'concurency',data: [], color: color_cnc , marker: { radius: 0}}
+            , { legendIndex: 9, name: 'system I/O',data: [], color: color_sio , marker: { radius: 0}}
+            , { legendIndex: 10, name: 'user I/O',data: [], color: color_uio , marker: { radius: 0}}
+            , { legendIndex: 11, name: 'scheduler',data: [], color: color_sch , marker: { radius: 0}}
+            , { legendIndex: 12, name: 'cpu',data: [], color: color_cpu , marker: { radius: 0}}
         ]
    }
 
@@ -492,7 +491,7 @@ $(document).ready(function() {
                              $("#debug").append(" errorstart ");
                              $("#debug").append(data);
                              $("#debug").append(" errorend ");
-        $("#debug").append('/cgi-bin/json_ash.sh?points='+loadpoints+'&vdb='+vdb+'&type='+sessnames);
+        $("#debug").append('/cgi-bin/json_ash.sh?points='+loadpoints+'&vdb='+vdb+'&type='+sesnames);
                           },
       complete: function() { 
                              $("#debug").append(" complete ");

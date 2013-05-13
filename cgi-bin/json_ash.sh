@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 
-print "Content-type: text/plain; charset=iso-8859-1\n\n";
+print "Content-type: text/plain; charset=iso-8859-1\n\n\n";
 
 $cmd=@ARGV[0];
 $vdb=@ARGV[1];
@@ -24,11 +24,16 @@ if ( 1 == $DEBUG ) {
 
 my $MON_HOME="/var/delphix/server/log";
 my $MON_HOME="/export/home/delphix/MONITOR";
-my $MON_HOME="/tmp/MONITOR";
+my $MON_HOME="/var/www/cgi-bin/MONITOR";
 
 $curr_date=`cat $MON_HOME/currrent_data.out`;
+#print "cat $MON_HOME/currrent_data.out\n";
+#print "curr_date=$cur_date\n";
 chomp($curr_date);
 $MON_DATA=$MON_HOME . "/" . $curr_date;
+
+
+#print "MON_DATA=$MON_DATA\n";
 
 chdir("$MON_DATA") or die "Can't chdir to $MON_DATA $!";
 
@@ -37,12 +42,12 @@ chdir("$MON_DATA") or die "Can't chdir to $MON_DATA $!";
       #system("echo 'hello' > /tmp/ash_args.txt ");
       $foo=$ENV{'SHELL'};
       #print "foo $foo";
-      $foo="echo \'$foo\' > /tmp/ash_args1.txt ";
-      print "foo $foo" if defined($kyle);
-      system($foo);
+      #$foo="echo \'$foo\' > /tmp/ash_args1.txt ";
+      #print "foo $foo" if defined($kyle);
+      #system($foo);
 if (length ($ENV{'QUERY_STRING'}) > 0){
-      $foo="echo \'$ENV{'QUERY_STRING'}\'  > /tmp/ash_args.txt";
-      system($foo);
+      #$foo="echo \'$ENV{'QUERY_STRING'}\'  > /tmp/ash_args.txt";
+      #system($foo);
       $buffer = $ENV{'QUERY_STRING'};
       @pairs = split(/&/, $buffer);
       foreach $pair (@pairs){
@@ -58,6 +63,8 @@ if (length ($ENV{'QUERY_STRING'}) > 0){
            if ( $name =~ "type" ) { $type=$value; };
       }
  }
+           $vdb='192.168.1.140:o1123';
+
 @vdb = split(/:/, $vdb);
 $my_ip=@vdb[0];
 $my_sid=@vdb[1];
